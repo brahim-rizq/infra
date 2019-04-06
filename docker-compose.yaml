@@ -34,18 +34,41 @@ services:
     networks:
       - network
 
-  mongodb:
-    build:
-      context: .docker/mongodb
-    container_name: mongodb
-    hostname: mongodb
-    volumes:
-      - mongodb_data:/data/db
+  mysql:
+    image: mysql:5.7
     ports:
-      - 27017:27017
-    networks:
-      - network
-    command: ['mongod', '--config', '/etc/mongod.conf']
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=dev
+      - MYSQL_USER=dev
+      - MYSQL_PASSWORD=dev
+      - MYSQL_DATABASE=todo
+    volumes:
+      - ./core/scripts/mysql:/docker-entrypoint-initdb.d
+      - ./db_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - 8081:80
+    links:
+      - mysql
+
+#  mongodb:
+#    build:
+#      context: .docker/mongodb
+#    container_name: mongodb
+#    hostname: mongodb
+#    volumes:
+#      - mongodb_data:/data/db
+#    ports:
+#      - 27017:27017
+#    networks:
+#      - network
+#    command: ['mongod', '--config', '/etc/mongod.conf']
 
 #  nodejs:
 #    build:
