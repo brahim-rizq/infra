@@ -1,0 +1,114 @@
+version: '2'
+networks:
+  network:
+    driver: bridge
+volumes:
+  mongodb_data:
+  drone_ci_data:
+services:
+  php:
+    build:
+      context: .docker/php7-fpm
+      args:
+        TIMEZONE: ${TIMEZONE}
+    volumes:
+      - ./core:/var/www/core
+      - ./.data/logs/core:/var/www/core/data/logs
+    container_name: php
+    hostname: php
+    networks:
+      - network
+
+  nginx:
+    build:
+      context: .docker/nginx
+    container_name: nginx
+    hostname: nginx
+    ports:
+      - 80:80
+    volumes_from:
+      - php
+    restart: always
+    volumes:
+      - ./.data/logs/nginx:/var/log/nginx/
+    networks:
+      - network
+
+  mongodb:
+    build:
+      context: .docker/mongodb
+    container_name: mongodb
+    hostname: mongodb
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - 27017:27017
+    networks:
+      - network
+    command: ['mongod', '--config', '/etc/mongod.conf']
+
+#  nodejs:
+#    build:
+#      context: .docker/nodejs
+#    hostname: nodejs
+#    container_name: nodejs
+#    volumes:
+#      - ./front/:/var/app
+#    ports:
+#      - 3000:3000
+#    command: ["yarn", "start"]
+#
+#  drone-server:
+#    image: drone/drone:1.0.0
+#    container_name: drone-server
+#    hostname: drone-server
+#    volumes:
+#      - drone_ci_data:/var/lib/drone/
+#    restart: always
+#    ports:
+#      - 8000:80
+#      - 4433:443
+#    environment:
+#      - DRONE_GITHUB=true
+#      - DRONE_LETS_ENCRYPT=true
+#      - DRONE_HOST=${DRONE_HOST}
+#      - DRONE_OPEN=${DRONE_OPEN}
+#      - DRONE_ADMIN=${DRONE_ADMIN}
+#      - DRONE_GITHUB_CLIENT_ID=${DRONE_GITHUB_CLIENT}
+#      - DRONE_GITHUB_CLIENT_SECRET=${DRONE_GITHUB_SECRET}
+#      - DRONE_SECRET=${DRONE_SECRET}
+##      - DRONE_GITHUB_SERVER=https://github.com
+##      - DRONE_RUNNER_CAPACITY=2
+##      - DRONE_USER_CREATE=brahim:rizq,admin:true
+##      - DRONE_SERVER_PROTO=https
+#    networks:
+#      - network
+#
+#  drone-agent:
+#    image: drone/agent:1.0.0
+#    container_name: drone-agent
+#    hostname: drone-agent
+#    links:
+#      - drone-server:drone-server
+#    restart: always
+#    depends_on:
+#      - drone-server
+##    depends_on: [ drone-server ]
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    environment:
+#      - DRONE_SERVER=drone-server:9000
+#      - DRONE_SECRET=${DRONE_SECRET}
+#    networks:
+#      - network
+
+#  elk:
+#    image: willdurand/elk
+#    ports:
+#      - 81:80
+#    volumes:
+#      - ./elk/logstash:/etc/logstash
+#      - ./elk/logstash/patterns:/opt/logstash/patterns
+#    volumes_from:
+#      - php
+#      - nginx
